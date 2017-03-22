@@ -12,25 +12,19 @@ import  UIKit
 protocol NamesControllerProtocol {
     func nextNameButtonAction()
     func previousNameButtonAction()
-    func favoriteToggleWasUpdatedAction()
-    func viewDidLoad()
+    func updateModel()
+    func configureViewController()
+    
 }
 
-class NamesController : NamesControllerProtocol {
+class NamesController : NamesControllerProtocol, NamesModelObserving {
     
-    var viewController : NamesViewControllerProtocol
-    var tabBarController : UITabBarController? {
-        return viewController.tabBarController
-    }
+    weak var viewController : NamesViewControllerProtocol?
+    
     var namesModel : NamesModelProtocol
     
     convenience init(viewController : NamesViewControllerProtocol) {
-        let tabBarController = viewController.tabBarController as? TabBarController
-        var namesModel = tabBarController?.namesModel
-        if namesModel == nil {
-            namesModel = NamesModel()
-        }
-        self.init(viewController: viewController, namesModel: namesModel!)
+        self.init(viewController: viewController, namesModel: PersistanceLayer.sharedInstance.namesModel)
     }
 
     convenience init(viewController : NamesViewControllerProtocol, nameGenerator : NameGenerating) {
@@ -44,21 +38,37 @@ class NamesController : NamesControllerProtocol {
     }
     
     func nextNameButtonAction() {
-        viewController.nameText = namesModel.nextName()
-        viewController.favoriteToggleIsOn = namesModel.currentNameIsFavorited
+        viewController?.nameText = namesModel.nextName()
     }
     
     func previousNameButtonAction() {
-        viewController.nameText = namesModel.previousName()
-        viewController.favoriteToggleIsOn = namesModel.currentNameIsFavorited
+        viewController?.nameText = namesModel.previousName()
     }
     
-    func favoriteToggleWasUpdatedAction() {
-        namesModel.currentNameIsFavorited = viewController.favoriteToggleIsOn
+    func configureViewController() {
+        viewController?.favoriteToggleIsOn = namesModel.currentNameIsFavorited
+        namesModel.addObserver(self)
+        if namesModel.currentName == nil {
+            _ = namesModel.nextName()
+        } else {
+            namesModelDidUpdate()
+        }
     }
     
-    func viewDidLoad() {
-        viewController.favoriteToggleIsOn = namesModel.currentNameIsFavorited
-        viewController.nameText = namesModel.currentName ?? ""
+    func updateViewController() {
+        viewController?.favoriteToggleIsOn = namesModel.currentNameIsFavorited
+        viewController?.nameText = namesModel.currentName
+        viewController?.previousNameButtonIsEnabled = namesModel.previousNameIsAvailable
+    }
+
+    func updateModel() {
+        guard viewController != nil else {
+            return
+        }
+        namesModel.currentNameIsFavorited = viewController!.favoriteToggleIsOn
+    }
+
+    func namesModelDidUpdate() {
+        updateViewController()
     }
 }

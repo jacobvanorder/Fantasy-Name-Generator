@@ -8,18 +8,20 @@
 
 import UIKit
 
-protocol NamesViewControllerProtocol {
+protocol NamesViewControllerProtocol: class {
     var nameText : String? {get set}
     var favoriteToggleIsOn : Bool {get set}
     var tabBarController : UITabBarController? { get }
+    var previousNameButtonIsEnabled : Bool { get set}
 }
 
 class NamesViewController: UIViewController, NamesViewControllerProtocol {
 
-    @IBOutlet weak var previousNameButton: UIButton!
-    @IBOutlet weak var nextNameButton: UIButton!
+    @IBOutlet weak var previousNameButton: UIBarButtonItem!
+    @IBOutlet weak var nextNameButton: UIBarButtonItem!
     @IBOutlet weak var nameLabel: UILabel!
-    @IBOutlet weak var favoriteToggle: UISwitch!
+    @IBOutlet weak var toolbar: UIToolbar!
+    @IBOutlet weak var favoriteButton: FavoriteButton!
     
     var controller : NamesControllerProtocol!
     
@@ -34,23 +36,32 @@ class NamesViewController: UIViewController, NamesViewControllerProtocol {
     
     var favoriteToggleIsOn : Bool {
         get {
-            return favoriteToggle.isOn
+            return favoriteButton.isSelected
         }
         set {
-            favoriteToggle.setOn(newValue, animated: true)
+            favoriteButton.isSelected = newValue
         }
     }
     
-    @IBAction func nextNameButtonAction(_ sender: UIButton) {
+    var previousNameButtonIsEnabled: Bool {
+        get {
+            return previousNameButton.isEnabled
+        }
+        set {
+            previousNameButton.isEnabled = newValue
+        }
+    }
+    @IBAction func nextNameButtonAction(_ sender: UIBarButtonItem) {
         controller.nextNameButtonAction()
     }
 
-    @IBAction func previousNameButtonAction(_ sender: UIButton) {
+    @IBAction func previousNameButtonAction(_ sender: UIBarButtonItem) {
         controller.previousNameButtonAction()
     }
 
-    @IBAction func favoriteToggleWasUpdatedAction(_ sender: UISwitch) {
-        controller.favoriteToggleWasUpdatedAction()
+    @IBAction func favoriteButtonAction(_ sender: FavoriteButton) {
+        sender.isSelected = !sender.isSelected
+        controller.updateModel()
     }
     
     override func viewDidLoad() {
@@ -58,7 +69,7 @@ class NamesViewController: UIViewController, NamesViewControllerProtocol {
         if controller == nil {
             controller = NamesController.init(viewController:self)
         }
-        controller.viewDidLoad()
+        controller.configureViewController()
     }
     
 }

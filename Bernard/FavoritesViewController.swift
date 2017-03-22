@@ -8,13 +8,28 @@
 
 import UIKit
 
-class FavoritesViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, NamesModelObserving {
+
+protocol FavoritesViewControllerProtocol : class {
+    func dismiss(animated flag: Bool, completion: (() -> Void)?)
+}
+
+class FavoritesNavigationBarDelegate: NSObject, UINavigationBarDelegate {
+    func position(for bar: UIBarPositioning) -> UIBarPosition {
+        return UIBarPosition.topAttached
+    }
+}
+
+class FavoritesViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UINavigationBarDelegate, NamesModelObserving, FavoritesViewControllerProtocol {
     
-    var controller : FavoritesController!
-    
+    lazy var controller : FavoritesControllerProtocol! =
+        FavoritesController(namesModel: PersistanceLayer.sharedInstance.namesModel,
+                            favoritesViewController: self)
+
     @IBOutlet weak var tableView: UITableView!
     @IBOutlet weak var clearButton: UIButton!
     @IBOutlet weak var shareButton: UIButton!
+    @IBOutlet weak var doneButton: UIBarButtonItem!
+    @IBOutlet weak var navigationBar: UINavigationBar!
     
     @IBAction func clearButtonAction(_ sender: Any) {
         let alertController = UIAlertController(title: "Clear Favorites", message: "Are you sure you want to clear the favorites list? This action cannot be undone.", preferredStyle: UIAlertControllerStyle.actionSheet)
@@ -37,11 +52,12 @@ class FavoritesViewController: UIViewController, UITableViewDataSource, UITableV
         }
     }
     
+    @IBAction func doneButtonAction(_ sender: UIBarButtonItem) {
+        self.controller.doneButtonAction()
+    }
+    
     private var namesModel : NamesModelProtocol? {
-        if let tabBarController = tabBarController as? TabBarController {
-            return tabBarController.namesModel
-        }
-        return nil
+        return PersistanceLayer.sharedInstance.namesModel
     }
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -62,10 +78,14 @@ class FavoritesViewController: UIViewController, UITableViewDataSource, UITableV
         super.viewDidLoad()
         self.tableView.dataSource = self
         namesModel?.addObserver(self)
+        self.navigationBar.delegate = self
     }
 
     func namesModelDidUpdate() {
         self.tableView.reloadData()
     }
 
+    func position(for bar: UIBarPositioning) -> UIBarPosition {
+        return UIBarPosition.topAttached
+    }
 }
